@@ -1,8 +1,10 @@
 package com.gumpGameEngine.main;
 
 import java.awt.Canvas;
+import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Frame;
+import java.awt.Graphics;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
@@ -15,17 +17,22 @@ public class Main {
 	private Frame frame;
 	private Canvas canvas;
 	private Loop loop;
-	private ObjectHandler handler;
 	
 	public Main() {
 		size = new Dimension(640, 480);
-		title = "iso_base// erste schritte";
+		title = "gumpGameEngine// first steps";
 		running = true;
 		
-		handler = new ObjectHandler();
-		
 		frame = new Frame(title);
-		canvas = new Canvas();
+		
+		canvas = new Canvas() {
+			@Override
+			public void paint(Graphics g) {
+				g.dispose();
+			}
+		};
+
+		canvas.setBackground(Color.BLUE);
 		
 		frame.addWindowListener(new WindowAdapter() {
 			@Override
@@ -35,6 +42,7 @@ public class Main {
 				System.exit(0);
 			}
 		});
+		
 		frame.add(canvas);
 
 		frame.setSize(size);
@@ -47,27 +55,61 @@ public class Main {
 	class Loop extends Thread {
 		@Override
 		public void run() {
-			final int ticks_per_second = 30;
-			final float tick_duration = 1000000000/ticks_per_second;
+			final int updates_per_second = 30;
+			final float update_time = 1000000000/updates_per_second;
 			final int max_frameskip = 5;
 
-			long current_moment;
-			int tick_count;
+			long now;
+			int update_count;
 			float interpolation;
 
-			long theoretical_now = System.nanoTime();
+			long incremental_now = System.nanoTime();
+
+				//debug
+				int frameCount = 0;
+				int uCount = 0;
+				int lastSecondTime = (int) (incremental_now / 1000000000);
+				//--
+			
 			while(running) {
-				tick_count = 0;
-				current_moment = System.nanoTime();
-				while(current_moment > theoretical_now && tick_count < max_frameskip) {
-					handler.update();
-					theoretical_now += tick_duration;
-					tick_count++;
+				update_count = 0;
+				now = System.nanoTime();
+				while(now > incremental_now && update_count < max_frameskip) {
+					update();
+					incremental_now += update_time;
+					update_count++;
+					
+						//debug
+						uCount++;
+						//--
+					
 				}
-				interpolation = (System.nanoTime()+tick_duration-theoretical_now)/tick_duration;
-				handler.render(interpolation);
+				
+					//debug
+		            int thisSecond = (int) (now / 1000000000);
+		            if (thisSecond > lastSecondTime)
+		            {
+		               System.out.println("fps: "+frameCount);
+		               System.out.println("ups: "+uCount);
+		               frameCount = 0;
+		               uCount = 0;
+		               lastSecondTime = thisSecond;
+		            }
+	            	frameCount++;
+		            //--
+				
+				interpolation = (System.nanoTime()+update_time-incremental_now)/update_time;
+				render(interpolation);
 			}
 		}
+	}
+
+	public void update() {
+		
+	}
+	
+	public void render(float interpolation) {
+		
 	}
 	
 	public static void main(String[] args) {
